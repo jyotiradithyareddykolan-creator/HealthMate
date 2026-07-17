@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HealthMate – Medicine Reminder & Health Tracker</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+      <span class="logo-text">HealthMate</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="home">
+        <i class="fa-solid fa-house"></i><span>Home</span>
+      </a>
+      <a href="#" class="nav-item" data-page="medications">
+        <i class="fa-solid fa-pills"></i><span>Medications</span>
+      </a>
+      <a href="#" class="nav-item" data-page="appointments">
+        <i class="fa-solid fa-calendar-check"></i><span>Appointments</span>
+      </a>
+      <a href="#" class="nav-item" data-page="tracking">
+        <i class="fa-solid fa-chart-line"></i><span>Health Tracking</span>
+      </a>
+      <a href="#" class="nav-item" data-page="profile">
+        <i class="fa-solid fa-user-circle"></i><span>Profile</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="reminder-badge" id="reminderBadge">
+        <i class="fa-solid fa-bell"></i>
+        <span id="reminderCount">0</span> reminders today
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+    <span class="logo-text">HealthMate</span>
+    <div class="header-avatar"><i class="fa-solid fa-user"></i></div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- ── HOME ── -->
+    <section class="page active" id="page-home">
+      <div class="page-header">
+        <div>
+          <p class="page-eyebrow">Good morning,</p>
+          <h1 class="page-title" id="profileName">Loading...</h1>
+        </div>
+        <div class="header-date" id="headerDate"></div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="stats-grid">
+        <div class="stat-card stat-blue">
+          <div class="stat-icon"><i class="fa-solid fa-pills"></i></div>
+          <div class="stat-body">
+            <span class="stat-value" id="statMeds">–</span>
+            <span class="stat-label">Active Medications</span>
+          </div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-icon"><i class="fa-solid fa-shield-heart"></i></div>
+          <div class="stat-body">
+            <span class="stat-value" id="statAdherence">–</span>
+            <span class="stat-label">Adherence Rate</span>
+          </div>
+        </div>
+        <div class="stat-card stat-purple">
+          <div class="stat-icon"><i class="fa-solid fa-calendar-check"></i></div>
+          <div class="stat-body">
+            <span class="stat-value" id="statAppts">–</span>
+            <span class="stat-label">Upcoming Visits</span>
+          </div>
+        </div>
+        <div class="stat-card stat-orange">
+          <div class="stat-icon"><i class="fa-solid fa-heart"></i></div>
+          <div class="stat-body">
+            <span class="stat-value" id="statBP">–</span>
+            <span class="stat-label">Blood Pressure</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <!-- Today's Medications -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fa-solid fa-clock"></i> Today's Schedule</h2>
+            <button class="btn-link" onclick="navigateTo('medications')">View all</button>
+          </div>
+          <div id="todayMeds" class="today-meds"></div>
+        </div>
+        <!-- Upcoming Appointments -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fa-solid fa-calendar"></i> Upcoming Appointments</h2>
+            <button class="btn-link" onclick="navigateTo('appointments')">View all</button>
+          </div>
+          <div id="upcomingAppts" class="appt-list"></div>
+        </div>
+      </div>
+
+      <!-- Quick Log -->
+      <div class="card mt-16">
+        <div class="card-header">
+          <h2 class="card-title"><i class="fa-solid fa-plus-circle"></i> Quick Health Log</h2>
+        </div>
+        <div class="quick-log-grid">
+          <div class="ql-item">
+            <label>Weight (kg)</label>
+            <input type="number" id="ql_weight" step="0.1" placeholder="72.5"/>
+          </div>
+          <div class="ql-item">
+            <label>Blood Pressure</label>
+            <div class="bp-inputs">
+              <input type="number" id="ql_sys" placeholder="120"/>
+              <span>/</span>
+              <input type="number" id="ql_dia" placeholder="80"/>
+            </div>
+          </div>
+          <div class="ql-item">
+            <label>Heart Rate (bpm)</label>
+            <input type="number" id="ql_hr" placeholder="72"/>
+          </div>
+          <div class="ql-item">
+            <label>Steps Today</label>
+            <input type="number" id="ql_steps" placeholder="8000"/>
+          </div>
+          <div class="ql-item">
+            <label>Sleep (hrs)</label>
+            <input type="number" id="ql_sleep" step="0.5" placeholder="7.5"/>
+          </div>
+          <div class="ql-item">
+            <label>Water (glasses)</label>
+            <input type="number" id="ql_water" placeholder="8"/>
+          </div>
+          <div class="ql-item">
+            <label>Mood</label>
+            <select id="ql_mood">
+              <option value="">Select...</option>
+              <option value="great">😊 Great</option>
+              <option value="good">🙂 Good</option>
+              <option value="okay">😐 Okay</option>
+              <option value="bad">😕 Not Great</option>
+              <option value="terrible">😞 Terrible</option>
+            </select>
+          </div>
+          <div class="ql-item ql-btn">
+            <button class="btn btn-primary" onclick="saveQuickLog()">
+              <i class="fa-solid fa-save"></i> Save Log
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── MEDICATIONS ── -->
+    <section class="page" id="page-medications">
+      <div class="page-header">
+        <div>
+          <p class="page-eyebrow">Manage</p>
+          <h1 class="page-title">Medications</h1>
+        </div>
+        <button class="btn btn-primary" onclick="openMedModal()">
+          <i class="fa-solid fa-plus"></i> Add Medication
+        </button>
+      </div>
+
+      <div class="tab-bar">
+        <button class="tab active" data-tab="current">Current</button>
+        <button class="tab" data-tab="history">Intake History</button>
+      </div>
+
+      <div class="tab-content active" id="tab-current">
+        <div class="meds-grid" id="medsGrid"></div>
+      </div>
+      <div class="tab-content" id="tab-history">
+        <div class="card">
+          <table class="data-table">
+            <thead>
+              <tr><th>Medication</th><th>Status</th><th>Scheduled</th><th>Logged At</th></tr>
+            </thead>
+            <tbody id="logsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── APPOINTMENTS ── -->
+    <section class="page" id="page-appointments">
+      <div class="page-header">
+        <div>
+          <p class="page-eyebrow">Schedule</p>
+          <h1 class="page-title">Appointments</h1>
+        </div>
+        <button class="btn btn-primary" onclick="openApptModal()">
+          <i class="fa-solid fa-plus"></i> New Appointment
+        </button>
+      </div>
+      <div class="two-col">
+        <div>
+          <h3 class="section-label">Upcoming</h3>
+          <div id="apptUpcoming" class="appt-cards"></div>
+        </div>
+        <div>
+          <h3 class="section-label">Past / Completed</h3>
+          <div id="apptPast" class="appt-cards"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TRACKING ── -->
+    <section class="page" id="page-tracking">
+      <div class="page-header">
+        <div>
+          <p class="page-eyebrow">Monitor</p>
+          <h1 class="page-title">Health Tracking</h1>
+        </div>
+        <button class="btn btn-primary" onclick="openHealthModal()">
+          <i class="fa-solid fa-plus"></i> Log Today
+        </button>
+      </div>
+
+      <div class="chart-grid">
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Blood Pressure Trend</h2></div>
+          <canvas id="chartBP" height="220"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Weight Trend</h2></div>
+          <canvas id="chartWeight" height="220"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Daily Steps</h2></div>
+          <canvas id="chartSteps" height="220"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title">Sleep Hours</h2></div>
+          <canvas id="chartSleep" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="card mt-16">
+        <div class="card-header"><h2 class="card-title">Recent Records</h2></div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="healthTable">
+            <thead>
+              <tr>
+                <th>Date</th><th>Weight</th><th>BP</th><th>HR</th>
+                <th>Steps</th><th>Sleep</th><th>Water</th><th>Mood</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="healthBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PROFILE ── -->
+    <section class="page" id="page-profile">
+      <div class="page-header">
+        <div>
+          <p class="page-eyebrow">Your</p>
+          <h1 class="page-title">Profile</h1>
+        </div>
+        <button class="btn btn-primary" onclick="saveProfile()">
+          <i class="fa-solid fa-save"></i> Save Changes
+        </button>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><h2 class="card-title"><i class="fa-solid fa-user"></i> Personal Info</h2></div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="p_name" placeholder="Your name"/>
+            </div>
+            <div class="form-group">
+              <label>Age</label>
+              <input type="number" id="p_age" placeholder="30"/>
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select id="p_gender">
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Blood Type</label>
+              <select id="p_blood">
+                <option value="">Unknown</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option>
+                <option>O+</option><option>O-</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Height (cm)</label>
+              <input type="number" id="p_height" placeholder="170"/>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h2 class="card-title"><i class="fa-solid fa-triangle-exclamation"></i> Medical Info</h2></div>
+          <div class="form-grid" style="grid-template-columns:1fr;">
+            <div class="form-group">
+              <label>Known Allergies</label>
+              <textarea id="p_allergies" rows="3" placeholder="e.g. Penicillin, Peanuts"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Medical Conditions</label>
+              <textarea id="p_conditions" rows="3" placeholder="e.g. Hypertension, Diabetes Type 2"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card mt-16">
+        <div class="card-header"><h2 class="card-title"><i class="fa-solid fa-phone"></i> Emergency Contact</h2></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Contact Name</label>
+            <input type="text" id="p_ec_name" placeholder="Family member name"/>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="p_ec_phone" placeholder="+91 98765 43210"/>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── MODALS ── -->
+  <div class="modal-backdrop" id="backdrop" onclick="closeAllModals()"></div>
+
+  <!-- Add Medication Modal -->
+  <div class="modal" id="medModal">
+    <div class="modal-header">
+      <h2 id="medModalTitle">Add Medication</h2>
+      <button class="modal-close" onclick="closeAllModals()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Medication Name *</label>
+        <input type="text" id="m_name" placeholder="e.g. Metformin"/>
+      </div>
+      <div class="form-group">
+        <label>Dosage</label>
+        <input type="text" id="m_dosage" placeholder="e.g. 500mg"/>
+      </div>
+      <div class="form-group">
+        <label>Frequency</label>
+        <select id="m_freq">
+          <option>Daily</option>
+          <option>Twice Daily</option>
+          <option>Three Times Daily</option>
+          <option>Weekly</option>
+          <option>As Needed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" id="m_start"/>
+      </div>
+      <div class="form-group">
+        <label>End Date (optional)</label>
+        <input type="date" id="m_end"/>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Reminder Times</label>
+        <div id="timeSlots" class="time-slots"></div>
+        <button class="btn btn-outline btn-sm mt-8" onclick="addTimeSlot()">
+          <i class="fa-solid fa-plus"></i> Add Time
+        </button>
+      </div>
+      <div class="form-group">
+        <label>Color Label</label>
+        <div class="color-picker" id="colorPicker"></div>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <input type="text" id="m_notes" placeholder="e.g. Take with food"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMedication()">Save Medication</button>
+    </div>
+  </div>
+
+  <!-- Add Appointment Modal -->
+  <div class="modal" id="apptModal">
+    <div class="modal-header">
+      <h2>New Appointment</h2>
+      <button class="modal-close" onclick="closeAllModals()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Title *</label>
+        <input type="text" id="a_title" placeholder="e.g. Annual Checkup"/>
+      </div>
+      <div class="form-group">
+        <label>Doctor / Specialist</label>
+        <input type="text" id="a_doctor" placeholder="Dr. Name"/>
+      </div>
+      <div class="form-group">
+        <label>Location / Clinic</label>
+        <input type="text" id="a_loc" placeholder="Hospital name"/>
+      </div>
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="a_date"/>
+      </div>
+      <div class="form-group">
+        <label>Time</label>
+        <input type="time" id="a_time"/>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="a_notes" rows="3" placeholder="What to bring, questions to ask..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAppointment()">Save Appointment</button>
+    </div>
+  </div>
+
+  <!-- Log Health Modal -->
+  <div class="modal" id="healthModal">
+    <div class="modal-header">
+      <h2>Log Health Data</h2>
+      <button class="modal-close" onclick="closeAllModals()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date</label><input type="date" id="h_date"/></div>
+      <div class="form-group"><label>Weight (kg)</label><input type="number" id="h_weight" step="0.1"/></div>
+      <div class="form-group">
+        <label>Blood Pressure</label>
+        <div class="bp-inputs">
+          <input type="number" id="h_sys" placeholder="Sys"/>
+          <span>/</span>
+          <input type="number" id="h_dia" placeholder="Dia"/>
+        </div>
+      </div>
+      <div class="form-group"><label>Heart Rate</label><input type="number" id="h_hr"/></div>
+      <div class="form-group"><label>Blood Sugar (mg/dL)</label><input type="number" id="h_sugar" step="0.1"/></div>
+      <div class="form-group"><label>Temperature (°C)</label><input type="number" id="h_temp" step="0.1"/></div>
+      <div class="form-group"><label>Steps</label><input type="number" id="h_steps"/></div>
+      <div class="form-group"><label>Sleep (hours)</label><input type="number" id="h_sleep" step="0.5"/></div>
+      <div class="form-group"><label>Water (glasses)</label><input type="number" id="h_water"/></div>
+      <div class="form-group">
+        <label>Mood</label>
+        <select id="h_mood">
+          <option value="">Select</option>
+          <option value="great">😊 Great</option>
+          <option value="good">🙂 Good</option>
+          <option value="okay">😐 Okay</option>
+          <option value="bad">😕 Not Great</option>
+          <option value="terrible">😞 Terrible</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Notes</label>
+        <textarea id="h_notes" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHealth()">Save Record</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
