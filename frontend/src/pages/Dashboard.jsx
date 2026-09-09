@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import "../Dashboard.css";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -9,7 +10,6 @@ function Dashboard() {
   const [vitals, setVitals] = useState([]);
   const [appointments, setAppointments] = useState([]);
 
-  // Form states
   const [medName, setMedName] = useState("");
   const [medDosage, setMedDosage] = useState("");
   const [medFrequency, setMedFrequency] = useState("");
@@ -92,77 +92,79 @@ function Dashboard() {
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "30px auto", padding: "0 20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>HealthMate Dashboard</h1>
-        <button onClick={handleLogout}>Log Out</button>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h1>HealthMate</h1>
+        <button className="logout-btn" onClick={handleLogout}>Log Out</button>
       </div>
 
       {/* Medicines Section */}
-      <section style={{ marginTop: 30 }}>
+      <div className="section-card">
         <h2>Medicines</h2>
-        <form onSubmit={handleAddMedicine} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}>
-          <input placeholder="Name" value={medName} onChange={(e) => setMedName(e.target.value)} required style={{ padding: 6 }} />
-          <input placeholder="Dosage (e.g. 500mg)" value={medDosage} onChange={(e) => setMedDosage(e.target.value)} required style={{ padding: 6 }} />
-          <input placeholder="Frequency (e.g. twice a day)" value={medFrequency} onChange={(e) => setMedFrequency(e.target.value)} required style={{ padding: 6 }} />
-          <input type="number" min="1" placeholder="Times/day" value={medTimesPerDay} onChange={(e) => setMedTimesPerDay(e.target.value)} style={{ padding: 6, width: 90 }} />
-          <button type="submit">Add Medicine</button>
+        <form onSubmit={handleAddMedicine} className="form-row">
+          <input placeholder="Name" value={medName} onChange={(e) => setMedName(e.target.value)} required />
+          <input placeholder="Dosage" value={medDosage} onChange={(e) => setMedDosage(e.target.value)} required />
+          <input placeholder="Frequency" value={medFrequency} onChange={(e) => setMedFrequency(e.target.value)} required />
+          <input type="number" min="1" placeholder="Times/day" value={medTimesPerDay} onChange={(e) => setMedTimesPerDay(e.target.value)} style={{ maxWidth: 90 }} />
+          <button type="submit" className="add-btn">Add</button>
         </form>
-        {medicines.length === 0 ? <p>No medicines added yet.</p> : (
-          <ul>
+        {medicines.length === 0 ? <p className="empty-state">No medicines added yet.</p> : (
+          <ul className="item-list">
             {medicines.map((m) => (
-              <li key={m.id} style={{ marginBottom: 6 }}>
-                <strong>{m.name}</strong> — {m.dosage}, {m.frequency} ({m.times_per_day}x/day)
-                {" "}<button onClick={() => handleDeleteMedicine(m.id)} style={{ marginLeft: 8 }}>Delete</button>
+              <li key={m.id} className="item-row">
+                <span><span className="item-name">{m.name}</span> <span className="item-meta">— {m.dosage}, {m.frequency} ({m.times_per_day}x/day)</span></span>
+                <button className="delete-btn" onClick={() => handleDeleteMedicine(m.id)}>Delete</button>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </div>
 
       {/* Vitals Section */}
-      <section style={{ marginTop: 30 }}>
+      <div className="section-card">
         <h2>Vitals</h2>
-        <form onSubmit={handleAddVital} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}>
-          <select value={vitalType} onChange={(e) => setVitalType(e.target.value)} style={{ padding: 6 }}>
+        <form onSubmit={handleAddVital} className="form-row">
+          <select value={vitalType} onChange={(e) => setVitalType(e.target.value)}>
             <option value="weight">Weight</option>
             <option value="blood_pressure">Blood Pressure</option>
             <option value="sugar">Blood Sugar</option>
           </select>
-          <input type="number" step="any" placeholder="Value" value={vitalValue} onChange={(e) => setVitalValue(e.target.value)} required style={{ padding: 6 }} />
-          <input placeholder="Unit (e.g. kg, mmHg)" value={vitalUnit} onChange={(e) => setVitalUnit(e.target.value)} style={{ padding: 6 }} />
-          <button type="submit">Add Vital</button>
+          <input type="number" step="any" placeholder="Value" value={vitalValue} onChange={(e) => setVitalValue(e.target.value)} required />
+          <input placeholder="Unit" value={vitalUnit} onChange={(e) => setVitalUnit(e.target.value)} />
+          <button type="submit" className="add-btn">Add</button>
         </form>
-        {vitals.length === 0 ? <p>No vitals logged yet.</p> : (
-          <ul>
+        {vitals.length === 0 ? <p className="empty-state">No vitals logged yet.</p> : (
+          <ul className="item-list">
             {vitals.map((v) => (
-              <li key={v.id}>
-                {v.type}: {v.value} {v.unit} — {new Date(v.recorded_at).toLocaleString()}
+              <li key={v.id} className="item-row">
+                <span className="item-meta">{v.type}: <span className="item-name">{v.value} {v.unit}</span></span>
+                <span className="item-meta">{new Date(v.recorded_at).toLocaleString()}</span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </div>
 
       {/* Appointments Section */}
-      <section style={{ marginTop: 30, marginBottom: 50 }}>
+      <div className="section-card">
         <h2>Appointments</h2>
-        <form onSubmit={handleAddAppointment} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 15 }}>
-          <input placeholder="Doctor name" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} required style={{ padding: 6 }} />
-          <input type="datetime-local" value={apptDateTime} onChange={(e) => setApptDateTime(e.target.value)} required style={{ padding: 6 }} />
-          <input placeholder="Notes (optional)" value={apptNotes} onChange={(e) => setApptNotes(e.target.value)} style={{ padding: 6 }} />
-          <button type="submit">Add Appointment</button>
+        <form onSubmit={handleAddAppointment} className="form-row">
+          <input placeholder="Doctor name" value={apptDoctor} onChange={(e) => setApptDoctor(e.target.value)} required />
+          <input type="datetime-local" value={apptDateTime} onChange={(e) => setApptDateTime(e.target.value)} required />
+          <input placeholder="Notes (optional)" value={apptNotes} onChange={(e) => setApptNotes(e.target.value)} />
+          <button type="submit" className="add-btn">Add</button>
         </form>
-        {appointments.length === 0 ? <p>No appointments scheduled.</p> : (
-          <ul>
+        {appointments.length === 0 ? <p className="empty-state">No appointments scheduled.</p> : (
+          <ul className="item-list">
             {appointments.map((a) => (
-              <li key={a.id}>
-                Dr. {a.doctor_name} — {new Date(a.date_time).toLocaleString()} {a.notes && `(${a.notes})`}
+              <li key={a.id} className="item-row">
+                <span className="item-name">Dr. {a.doctor_name}</span>
+                <span className="item-meta">{new Date(a.date_time).toLocaleString()} {a.notes && `— ${a.notes}`}</span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </div>
     </div>
   );
 }
