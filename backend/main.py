@@ -56,3 +56,91 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
+
+from datetime import datetime
+from typing import List
+from pydantic import BaseModel
+
+# ---- Additional schemas ----
+class MedicineCreate(BaseModel):
+    name: str
+    dosage: str
+    frequency: str
+    times_per_day: int
+    start_date: datetime
+    end_date: datetime | None = None
+
+class MedicineResponse(MedicineCreate):
+    id: int
+    class Config:
+        from_attributes = True
+
+class VitalCreate(BaseModel):
+    type: str
+    value: float
+    unit: str
+
+class VitalResponse(VitalCreate):
+    id: int
+    recorded_at: datetime
+    class Config:
+        from_attributes = True
+
+class AppointmentCreate(BaseModel):
+    doctor_name: str
+    date_time: datetime
+    notes: str | None = None
+
+class AppointmentResponse(AppointmentCreate):
+    id: int
+    reminder_sent: bool
+    class Config:
+        from_attributes = True
+
+# ---- Medicine endpoints ----
+@app.post("/medicines", response_model=MedicineResponse)
+def create_medicine(medicine: MedicineCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    new_medicine = models.Medicine(**medicine.dict(), user_id=current_user.id)
+    db.add(new_medicine)
+    db.commit()
+    db.refresh(new_medicine)
+    return new_medicine
+
+@app.get("/medicines", response_model=List[MedicineResponse])
+def get_medicines(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return db.query(models.Medicine).filter(models.Medicine.user_id == current_user.id).all()
+
+@app.delete("/medicines/{medicine_id}")
+def delete_medicine(medicine_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    medicine = db.query(models.Medicine).filter(models.Medicine.id == medicine_id, models.Medicine.user_id == current_user.id).first()
+    if not medicine:
+        raise HTTPException(status_code=404, detail="Medicine not found")
+    db.delete(medicine)
+    db.commit()
+    return {"message": "Medicine deleted"}
+
+# ---- Vitals endpoints ----
+@app.post("/vitals", response_model=VitalResponse)
+def create_vital(vital: VitalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    new_vital = models.Vital(**vital.dict(), user_id=current_user.id)
+    db.add(new_vital)
+    db.commit()
+    db.refresh(new_vital)
+    return new_vital
+
+@app.get("/vitals", response_model=List[VitalResponse])
+def get_vitals(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return db.query(models.Vital).filter(models.Vital.user_id == current_user.id).order_by(models.Vital.recorded_at).all()
+
+# ---- Appointment endpoints ----
+@app.post("/appointments", response_model=AppointmentResponse)
+def create_appointment(appt: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    new_appt = models.Appointment(**appt.dict(), user_id=current_user.id)
+    db.add(new_appt)
+    db.commit()
+    db.refresh(new_appt)
+    return new_appt
+
+@app.get("/appointments", response_model=List[AppointmentResponse])
+def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
