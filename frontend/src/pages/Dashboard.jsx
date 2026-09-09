@@ -15,6 +15,7 @@ function Dashboard() {
   const [medDosage, setMedDosage] = useState("");
   const [medFrequency, setMedFrequency] = useState("");
   const [medTimesPerDay, setMedTimesPerDay] = useState(1);
+  const [medDoseTimes, setMedDoseTimes] = useState("");
 
   const [vitalType, setVitalType] = useState("weight");
   const [vitalValue, setVitalValue] = useState("");
@@ -56,9 +57,10 @@ function Dashboard() {
     e.preventDefault();
     await api.post("/medicines", {
       name: medName, dosage: medDosage, frequency: medFrequency,
-      times_per_day: Number(medTimesPerDay), start_date: new Date().toISOString(), end_date: null,
+      times_per_day: Number(medTimesPerDay), dose_times: medDoseTimes,
+      start_date: new Date().toISOString(), end_date: null,
     });
-    setMedName(""); setMedDosage(""); setMedFrequency(""); setMedTimesPerDay(1);
+    setMedName(""); setMedDosage(""); setMedFrequency(""); setMedTimesPerDay(1); setMedDoseTimes("");
     fetchAll();
   };
   const handleDeleteMedicine = async (id) => { await api.delete(`/medicines/${id}`); fetchAll(); };
@@ -110,13 +112,20 @@ function Dashboard() {
           <input placeholder="Dosage" value={medDosage} onChange={(e) => setMedDosage(e.target.value)} required />
           <input placeholder="Frequency" value={medFrequency} onChange={(e) => setMedFrequency(e.target.value)} required />
           <input type="number" min="1" placeholder="Times/day" value={medTimesPerDay} onChange={(e) => setMedTimesPerDay(e.target.value)} style={{ maxWidth: 90 }} />
+          <input placeholder="Dose times (e.g. 14:30,21:00)" value={medDoseTimes} onChange={(e) => setMedDoseTimes(e.target.value)} style={{ minWidth: 180 }} />
           <button type="submit" className="add-btn">Add</button>
         </form>
         {medicines.length === 0 ? <p className="empty-state">No medicines added yet.</p> : (
           <ul className="item-list">
             {medicines.map((m) => (
               <li key={m.id} className="item-row">
-                <span><span className="item-name">{m.name}</span> <span className="item-meta">— {m.dosage}, {m.frequency} ({m.times_per_day}x/day)</span></span>
+                <span>
+                  <span className="item-name">{m.name}</span>{" "}
+                  <span className="item-meta">
+                    — {m.dosage}, {m.frequency} ({m.times_per_day}x/day)
+                    {m.dose_times && ` | Doses: ${m.dose_times}`}
+                  </span>
+                </span>
                 <button className="delete-btn" onClick={() => handleDeleteMedicine(m.id)}>Delete</button>
               </li>
             ))}

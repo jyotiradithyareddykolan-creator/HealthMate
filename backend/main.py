@@ -5,10 +5,11 @@ from typing import List
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.database import engine, Base, get_db
-from app import models, schemas, auth, email_utils
+from app import models, schemas, auth, email_utils, reminders
+
+from apscheduler.schedulers.background import BackgroundScheduler
 
 Base.metadata.create_all(bind=engine)
 
@@ -21,6 +22,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(reminders.generate_todays_medicine_logs, "interval", minutes=5)
+scheduler.add_job(reminders.send_dose_reminders, "interval", minutes=2)
+scheduler.add_job(reminders.check_appointment_reminders, "interval", minutes=5)
+scheduler.start()
+
+# Run once immediately on startup so we don't wait for the first interval
+reminders.generate_todays_medicine_logs()
+
 
 # ---- Auth endpoints ----
 
@@ -117,55 +128,18 @@ def update_profile(profile: schemas.ProfileUpdate, db: Session = Depends(get_db)
     return current_user
 
 
-# ---- Additional schemas ----
-
-class MedicineCreate(BaseModel):
-    name: str
-    dosage: str
-    frequency: str
-    times_per_day: int
-    start_date: datetime
-    end_date: datetime | None = None
-
-class MedicineResponse(MedicineCreate):
-    id: int
-    class Config:
-        from_attributes = True
-
-class VitalCreate(BaseModel):
-    type: str
-    value: float
-    unit: str
-
-class VitalResponse(VitalCreate):
-    id: int
-    recorded_at: datetime
-    class Config:
-        from_attributes = True
-
-class AppointmentCreate(BaseModel):
-    doctor_name: str
-    date_time: datetime
-    notes: str | None = None
-
-class AppointmentResponse(AppointmentCreate):
-    id: int
-    reminder_sent: bool
-    class Config:
-        from_attributes = True
-
-
 # ---- Medicine endpoints ----
 
-@app.post("/medicines", response_model=MedicineResponse)
-def create_medicine(medicine: MedicineCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+@app.post("/medicines", response_model=schemas.MedicineResponse)
+def create_medicine(medicine: schemas.MedicineCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_medicine = models.Medicine(**medicine.dict(), user_id=current_user.id)
     db.add(new_medicine)
     db.commit()
     db.refresh(new_medicine)
+    reminders.generate_todays_medicine_logs()
     return new_medicine
 
-@app.get("/medicines", response_model=List[MedicineResponse])
+@app.get("/medicines", response_model=List[schemas.MedicineResponse])
 def get_medicines(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Medicine).filter(models.Medicine.user_id == current_user.id).all()
 
@@ -174,22 +148,54 @@ def delete_medicine(medicine_id: int, db: Session = Depends(get_db), current_use
     medicine = db.query(models.Medicine).filter(models.Medicine.id == medicine_id, models.Medicine.user_id == current_user.id).first()
     if not medicine:
         raise HTTPException(status_code=404, detail="Medicine not found")
+
+    db.query(models.MedicineLog).filter(models.MedicineLog.medicine_id == medicine_id).delete()
+
     db.delete(medicine)
     db.commit()
     return {"message": "Medicine deleted"}
 
 
+# ---- Medicine Log endpoints (per-dose tracking) ----
+
+@app.get("/medicine-logs/today", response_model=List[schemas.MedicineLogResponse])
+def get_todays_logs(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    today_end = datetime.combine(datetime.utcnow().date(), datetime.max.time())
+
+    logs = db.query(models.MedicineLog).join(models.Medicine).filter(
+        models.Medicine.user_id == current_user.id,
+        models.MedicineLog.scheduled_time >= today_start,
+        models.MedicineLog.scheduled_time <= today_end,
+    ).order_by(models.MedicineLog.scheduled_time).all()
+    return logs
+
+
+@app.post("/medicine-logs/{log_id}/mark-taken")
+def mark_taken(log_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    log = db.query(models.MedicineLog).join(models.Medicine).filter(
+        models.MedicineLog.id == log_id,
+        models.Medicine.user_id == current_user.id
+    ).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Log not found")
+    log.status = "taken"
+    log.taken_at = datetime.utcnow()
+    db.commit()
+    return {"message": "Marked as taken"}
+
+
 # ---- Vitals endpoints ----
 
-@app.post("/vitals", response_model=VitalResponse)
-def create_vital(vital: VitalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+@app.post("/vitals", response_model=schemas.VitalResponse)
+def create_vital(vital: schemas.VitalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_vital = models.Vital(**vital.dict(), user_id=current_user.id)
     db.add(new_vital)
     db.commit()
     db.refresh(new_vital)
     return new_vital
 
-@app.get("/vitals", response_model=List[VitalResponse])
+@app.get("/vitals", response_model=List[schemas.VitalResponse])
 def get_vitals(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Vital).filter(models.Vital.user_id == current_user.id).order_by(models.Vital.recorded_at).all()
 
@@ -205,15 +211,15 @@ def delete_vital(vital_id: int, db: Session = Depends(get_db), current_user: mod
 
 # ---- Appointment endpoints ----
 
-@app.post("/appointments", response_model=AppointmentResponse)
-def create_appointment(appt: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+@app.post("/appointments", response_model=schemas.AppointmentResponse)
+def create_appointment(appt: schemas.AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_appt = models.Appointment(**appt.dict(), user_id=current_user.id)
     db.add(new_appt)
     db.commit()
     db.refresh(new_appt)
     return new_appt
 
-@app.get("/appointments", response_model=List[AppointmentResponse])
+@app.get("/appointments", response_model=List[schemas.AppointmentResponse])
 def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
 

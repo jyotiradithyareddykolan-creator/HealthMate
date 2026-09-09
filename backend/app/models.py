@@ -13,13 +13,11 @@ class User(Base):
     reset_token = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Patient profile fields
     full_name = Column(String(255), nullable=True)
     age = Column(Integer, nullable=True)
     gender = Column(String(20), nullable=True)
     blood_type = Column(String(10), nullable=True)
 
-    # Emergency contact fields
     emergency_contact_name = Column(String(255), nullable=True)
     emergency_contact_phone = Column(String(20), nullable=True)
     emergency_contact_relation = Column(String(50), nullable=True)
@@ -37,6 +35,7 @@ class Medicine(Base):
     dosage = Column(String(100))
     frequency = Column(String(100))
     times_per_day = Column(Integer, default=1)
+    dose_times = Column(String(255), nullable=True)  # comma-separated "09:00,21:00"
     start_date = Column(DateTime)
     end_date = Column(DateTime, nullable=True)
 
@@ -50,6 +49,7 @@ class MedicineLog(Base):
     scheduled_time = Column(DateTime, nullable=False)
     taken_at = Column(DateTime, nullable=True)
     status = Column(String(20), default="pending")
+    reminder_sent = Column(Boolean, default=False)
 
     medicine = relationship("Medicine", back_populates="logs")
 

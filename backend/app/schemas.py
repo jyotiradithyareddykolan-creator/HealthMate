@@ -52,3 +52,48 @@ class DoctorVisitResponse(DoctorVisitCreate):
     id: int
     class Config:
         from_attributes = True
+
+class MedicineCreate(BaseModel):
+    name: str
+    dosage: str
+    frequency: str
+    times_per_day: int
+    dose_times: str | None = None
+    start_date: datetime
+    end_date: datetime | None = None
+
+class MedicineResponse(MedicineCreate):
+    id: int
+    class Config:
+        from_attributes = True
+
+class MedicineLogResponse(BaseModel):
+    id: int
+    medicine_id: int
+    scheduled_time: datetime
+    taken_at: datetime | None = None
+    status: str
+    class Config:
+        from_attributes = True
+
+class VitalCreate(BaseModel):
+    type: str
+    value: float
+    unit: str
+
+class VitalResponse(VitalCreate):
+    id: int
+    recorded_at: datetime
+    class Config:
+        from_attributes = True
+
+class AppointmentCreate(BaseModel):
+    doctor_name: str
+    date_time: datetime
+    notes: str | None = None
+
+class AppointmentResponse(AppointmentCreate):
+    id: int
+    reminder_sent: bool
+    class Config:
+        from_attributes = True

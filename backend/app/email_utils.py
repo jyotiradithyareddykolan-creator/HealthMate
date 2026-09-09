@@ -54,3 +54,64 @@ If you didn't request this, you can safely ignore this email.
         server.starttls()
         server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
         server.send_message(msg)
+        
+def send_appointment_reminder(to_email: str, doctor_name: str, date_time):
+    subject = "Upcoming appointment reminder — HealthMate"
+    body = f"""Hi,
+
+This is a reminder that you have an appointment with Dr. {doctor_name} on {date_time.strftime('%B %d, %Y at %I:%M %p')}.
+
+— HealthMate
+"""
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = f"HealthMate <{EMAIL_ADDRESS}>"
+    msg["To"] = to_email
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
+        server.send_message(msg)
+
+
+def send_medicine_reminder(to_email: str, medicines):
+    med_list = "\n".join([f"- {m.name} ({m.dosage}) — {m.frequency}" for m in medicines])
+
+    subject = "Your daily medicine reminder — HealthMate"
+    body = f"""Hi,
+
+Here are your active medicines for today:
+
+{med_list}
+
+— HealthMate
+"""
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = f"HealthMate <{EMAIL_ADDRESS}>"
+    msg["To"] = to_email
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
+        server.send_message(msg)
+        
+def send_dose_reminder(to_email: str, medicine_name: str, dosage: str, scheduled_time):
+    subject = f"Time to take {medicine_name} — HealthMate"
+    body = f"""Hi,
+
+It's time to take your medicine:
+
+{medicine_name} ({dosage}) — scheduled for {scheduled_time.strftime('%I:%M %p')}
+
+— HealthMate
+"""
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = f"HealthMate <{EMAIL_ADDRESS}>"
+    msg["To"] = to_email
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_APP_PASSWORD)
+        server.send_message(msg)
