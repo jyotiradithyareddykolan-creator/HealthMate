@@ -1,6 +1,11 @@
 import secrets
+from datetime import datetime
+from typing import List
+
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.database import engine, Base, get_db
 from app import models, schemas, auth, email_utils
@@ -8,6 +13,16 @@ from app import models, schemas, auth, email_utils
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="HealthMate API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---- Auth endpoints ----
 
 @app.post("/signup")
 def signup(user: schemas.UserSignup, db: Session = Depends(get_db)):
@@ -32,6 +47,7 @@ def signup(user: schemas.UserSignup, db: Session = Depends(get_db)):
 
     return {"message": "Signup successful. Please check your email to verify your account."}
 
+
 @app.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.verification_token == token).first()
@@ -43,6 +59,7 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Email verified successfully. You can now log in."}
+
 
 @app.post("/login", response_model=schemas.Token)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
@@ -57,11 +74,36 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     access_token = auth.create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 
-from datetime import datetime
-from typing import List
-from pydantic import BaseModel
+
+@app.post("/forgot-password")
+def forgot_password(request: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.email == request.email).first()
+
+    if user:
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        db.commit()
+        email_utils.send_reset_email(user.email, token)
+
+    return {"message": "If that email is registered, a password reset link has been sent."}
+
+
+@app.post("/reset-password")
+def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.reset_token == request.token).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user.password_hash = auth.hash_password(request.new_password)
+    user.reset_token = None
+    db.commit()
+
+    return {"message": "Password reset successful. You can now log in with your new password."}
+
 
 # ---- Additional schemas ----
+
 class MedicineCreate(BaseModel):
     name: str
     dosage: str
@@ -97,7 +139,9 @@ class AppointmentResponse(AppointmentCreate):
     class Config:
         from_attributes = True
 
+
 # ---- Medicine endpoints ----
+
 @app.post("/medicines", response_model=MedicineResponse)
 def create_medicine(medicine: MedicineCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_medicine = models.Medicine(**medicine.dict(), user_id=current_user.id)
@@ -119,7 +163,9 @@ def delete_medicine(medicine_id: int, db: Session = Depends(get_db), current_use
     db.commit()
     return {"message": "Medicine deleted"}
 
+
 # ---- Vitals endpoints ----
+
 @app.post("/vitals", response_model=VitalResponse)
 def create_vital(vital: VitalCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_vital = models.Vital(**vital.dict(), user_id=current_user.id)
@@ -132,7 +178,9 @@ def create_vital(vital: VitalCreate, db: Session = Depends(get_db), current_user
 def get_vitals(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Vital).filter(models.Vital.user_id == current_user.id).order_by(models.Vital.recorded_at).all()
 
+
 # ---- Appointment endpoints ----
+
 @app.post("/appointments", response_model=AppointmentResponse)
 def create_appointment(appt: AppointmentCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     new_appt = models.Appointment(**appt.dict(), user_id=current_user.id)

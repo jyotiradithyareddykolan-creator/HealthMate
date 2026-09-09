@@ -40,6 +40,9 @@ function Login() {
           required
           style={{ display: "block", width: "100%", marginBottom: 10, padding: 8 }}
         />
+        <p style={{ textAlign: "right", marginTop: -5, marginBottom: 10 }}>
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
         <button type="submit" style={{ width: "100%", padding: 8 }}>Log In</button>
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
