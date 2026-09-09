@@ -13,9 +13,21 @@ class User(Base):
     reset_token = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Patient profile fields
+    full_name = Column(String(255), nullable=True)
+    age = Column(Integer, nullable=True)
+    gender = Column(String(20), nullable=True)
+    blood_type = Column(String(10), nullable=True)
+
+    # Emergency contact fields
+    emergency_contact_name = Column(String(255), nullable=True)
+    emergency_contact_phone = Column(String(20), nullable=True)
+    emergency_contact_relation = Column(String(50), nullable=True)
+
     medicines = relationship("Medicine", back_populates="owner")
     vitals = relationship("Vital", back_populates="owner")
     appointments = relationship("Appointment", back_populates="owner")
+    visits = relationship("DoctorVisit", back_populates="owner")
 
 class Medicine(Base):
     __tablename__ = "medicines"
@@ -62,3 +74,15 @@ class Appointment(Base):
     reminder_sent = Column(Boolean, default=False)
 
     owner = relationship("User", back_populates="appointments")
+
+class DoctorVisit(Base):
+    __tablename__ = "doctor_visits"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    doctor_name = Column(String(255), nullable=False)
+    visit_date = Column(DateTime, nullable=False)
+    diagnosis = Column(String(500), nullable=True)
+    prescription = Column(String(500), nullable=True)
+    notes = Column(String(500), nullable=True)
+
+    owner = relationship("User", back_populates="visits")

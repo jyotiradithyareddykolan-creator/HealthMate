@@ -102,6 +102,21 @@ def reset_password(request: schemas.ResetPasswordRequest, db: Session = Depends(
     return {"message": "Password reset successful. You can now log in with your new password."}
 
 
+# ---- Profile endpoints ----
+
+@app.get("/profile", response_model=schemas.ProfileResponse)
+def get_profile(current_user: models.User = Depends(auth.get_current_user)):
+    return current_user
+
+@app.put("/profile", response_model=schemas.ProfileResponse)
+def update_profile(profile: schemas.ProfileUpdate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    for field, value in profile.dict(exclude_unset=True).items():
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 # ---- Additional schemas ----
 
 class MedicineCreate(BaseModel):
@@ -178,6 +193,15 @@ def create_vital(vital: VitalCreate, db: Session = Depends(get_db), current_user
 def get_vitals(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Vital).filter(models.Vital.user_id == current_user.id).order_by(models.Vital.recorded_at).all()
 
+@app.delete("/vitals/{vital_id}")
+def delete_vital(vital_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    vital = db.query(models.Vital).filter(models.Vital.id == vital_id, models.Vital.user_id == current_user.id).first()
+    if not vital:
+        raise HTTPException(status_code=404, detail="Vital not found")
+    db.delete(vital)
+    db.commit()
+    return {"message": "Vital deleted"}
+
 
 # ---- Appointment endpoints ----
 
@@ -192,3 +216,36 @@ def create_appointment(appt: AppointmentCreate, db: Session = Depends(get_db), c
 @app.get("/appointments", response_model=List[AppointmentResponse])
 def get_appointments(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     return db.query(models.Appointment).filter(models.Appointment.user_id == current_user.id).all()
+
+@app.delete("/appointments/{appointment_id}")
+def delete_appointment(appointment_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    appt = db.query(models.Appointment).filter(models.Appointment.id == appointment_id, models.Appointment.user_id == current_user.id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+    db.delete(appt)
+    db.commit()
+    return {"message": "Appointment deleted"}
+
+
+# ---- Doctor Visit endpoints ----
+
+@app.post("/visits", response_model=schemas.DoctorVisitResponse)
+def create_visit(visit: schemas.DoctorVisitCreate, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    new_visit = models.DoctorVisit(**visit.dict(), user_id=current_user.id)
+    db.add(new_visit)
+    db.commit()
+    db.refresh(new_visit)
+    return new_visit
+
+@app.get("/visits", response_model=List[schemas.DoctorVisitResponse])
+def get_visits(db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    return db.query(models.DoctorVisit).filter(models.DoctorVisit.user_id == current_user.id).order_by(models.DoctorVisit.visit_date.desc()).all()
+
+@app.delete("/visits/{visit_id}")
+def delete_visit(visit_id: int, db: Session = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    visit = db.query(models.DoctorVisit).filter(models.DoctorVisit.id == visit_id, models.DoctorVisit.user_id == current_user.id).first()
+    if not visit:
+        raise HTTPException(status_code=404, detail="Visit not found")
+    db.delete(visit)
+    db.commit()
+    return {"message": "Visit deleted"}
