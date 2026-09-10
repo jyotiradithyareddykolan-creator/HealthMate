@@ -11,8 +11,7 @@ A full-stack personal health management application — track medications with p
 
 - **Authentication** — signup with mandatory email verification, JWT-based login, forgot/reset password flow
 - **Patient Profile** — personal info (name, age, gender, blood type) and emergency contact details
-- **Medicine Tracking** — log medicines with dosage, frequency, and specific dose times (e.g. `09:00,21:00`)
-- **Automated Dose Reminders** — background scheduler checks upcoming doses and sends email alerts at the scheduled time
+- **Medicine Tracking** — log medicines with dosage, frequency, and specific dose times (e.g. `09:00,21:00`), with automated per-dose email reminders
 - **Vitals Tracking** — log weight, blood pressure, and blood sugar with interactive trend line charts
 - **Appointment Management** — schedule upcoming appointments with automated 24-hour-advance email reminders
 - **Doctor Visit History** — record past visits with diagnosis, prescription, and notes
@@ -55,9 +54,16 @@ A full-stack personal health management application — track medications with p
 **Database:** MySQL
 **Authentication:** JWT (python-jose), bcrypt password hashing
 **Email:** Resend (transactional email API)
-**Containerization:** Docker, Docker Compose
-**Deployment:** Railway (backend, frontend, and MySQL deployed as separate services)
+**Deployment:** Docker + Railway (backend, frontend, and MySQL as separate services)
 
 ---
 
 ## Architecture
+
+The application runs as three independent, containerized services — mirroring how real production systems are deployed, rather than as a single monolithic app:
+
+- **Frontend** (React, served via Nginx) — a single-page app that talks to the backend exclusively through its REST API
+- **Backend** (FastAPI) — handles auth, business logic, and runs the background reminder scheduler
+- **Database** (MySQL) — a fully separate service, reached only over the network via SQLAlchemy
+
+Docker containerizes each service independently, so the exact setup that runs locally via `docker-compose` is what's deployed to production on Railway — no gap between development and deployment. Getting this right meant solving a few real container-networking problems: making the backend wait for MySQL to be truly ready (not just started) before connecting, passing frontend environment variables at Docker *build* time rather than runtime (a common Vite + Docker gotcha), and configuring Nginx to fall back to `index.html` so React Router's client-side routes don't 404 on direct navigation.
