@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api";
 import "../Dashboard.css";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -94,6 +95,15 @@ function Dashboard() {
 
   const handleLogout = () => { localStorage.removeItem("token"); navigate("/login"); };
 
+  const getChartData = (type) => {
+    return vitals
+      .filter((v) => v.type === type)
+      .map((v) => ({
+        date: new Date(v.recorded_at).toLocaleDateString(),
+        value: v.value,
+      }));
+  };
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
@@ -155,6 +165,63 @@ function Dashboard() {
               </li>
             ))}
           </ul>
+        )}
+      </div>
+
+      {/* Weight Trend */}
+      <div className="section-card">
+        <h2>Weight Trend</h2>
+        {getChartData("weight").length === 0 ? (
+          <p className="empty-state">Add weight entries to see trends here.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={getChartData("weight")}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="value" name="Weight (kg)" stroke="#4f46e5" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Blood Pressure Trend */}
+      <div className="section-card">
+        <h2>Blood Pressure Trend</h2>
+        {getChartData("blood_pressure").length === 0 ? (
+          <p className="empty-state">Add blood pressure entries to see trends here.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={getChartData("blood_pressure")}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="value" name="Blood Pressure (mmHg)" stroke="#dc2626" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+
+      {/* Blood Sugar Trend */}
+      <div className="section-card">
+        <h2>Blood Sugar Trend</h2>
+        {getChartData("sugar").length === 0 ? (
+          <p className="empty-state">Add blood sugar entries to see trends here.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={getChartData("sugar")}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="value" name="Blood Sugar" stroke="#059669" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
         )}
       </div>
 
